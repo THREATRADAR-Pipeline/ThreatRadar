@@ -1,0 +1,96 @@
+services:
+  misp-db:
+    image: mysql:8.0
+    container_name: misp-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    command: >
+      --innodb-redo-log-capacity=134217728
+      --innodb-buffer-pool-size=256M
+    volumes:
+      - misp-db-data:/var/lib/mysql
+    networks:
+      - misp-internal
+      - soc-net
+
+  redis:
+    image: redis:7
+    container_name: misp-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    networks:
+      - misp-internal
+
+  misp:
+    image: ghcr.io/misp/misp-docker/misp-core:latest
+    container_name: misp
+    restart: unless-stopped
+    depends_on:
+      - misp-db
+      - redis
+    ports:
+      - "8080:80"
+      - "8443:443"
+    healthcheck:
+      test: ["CMD", "curl", "-sk", "https://localhost/users/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    environment:
+      MYSQL_HOST: misp-db
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_FQDN: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      BASE_URL: ${BASE_URL}
+      MISP_EXTERNAL_BASEURL: ${MISP_EXTERNAL_BASEURL}
+      SECURITY_REST_CLIENT_BASEURL: ${MISP_REST_CLIENT_BASEURL}
+      MISP_ADMIN_EMAIL: ${MISP_ADMIN_EMAIL}
+      MISP_ADMIN_PASSPHRASE: ${MISP_ADMIN_PASSPHRASE}
+      ADMIN_KEY: ${ADMIN_KEY}
+    volumes:
+      - misp-data:/var/www/MISP/app/files
+    networks:
+      - misp-internal
+      - soc-net
+
+  misp-pusher:
+    build:
+      context: ..
+      dockerfile: misp/Dockerfile
+    container_name: misp-pusher
+    restart: unless-stopped
+    depends_on:
+      misp:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      MISP_URL: https://misp:443
+      MISP_VERIFY_SSL: "false"
+      MISP_KEY: ${ADMIN_KEY}
+      ELASTIC_HOST: http://elasticsearch:9200
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      ELASTIC_USER: ${ELASTIC_USER:-elastic}
+      ELASTIC_VERIFY_SSL: "false"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    networks:
+      - misp-internal
+      - soc-net
+
+volumes:
+  misp-db-data:
+  misp-data:
+
+networks:
+  misp-internal:
+    driver: bridge
+  soc-net:
+    external: true
