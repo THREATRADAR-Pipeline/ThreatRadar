@@ -7,7 +7,7 @@ KIBANA_URL=${KIBANA_URL:-http://localhost:5601}
 EXPORT_FILE="kibana/dashboards/export.ndjson"
 
 if [ ! -f "$EXPORT_FILE" ]; then
-  echo "❌ Export file not found: $EXPORT_FILE"
+  echo "Export file not found: $EXPORT_FILE"
   exit 1
 fi
 
