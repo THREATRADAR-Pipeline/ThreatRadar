@@ -1,0 +1,282 @@
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - http.host=0.0.0.0
+      - script.allowed_types=inline,stored
+      - script.allowed_contexts=update,filter,score,update_by_query
+      - thread_pool.search.queue_size=100000
+      - thread_pool.write.queue_size=10000
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+      - kibana-token:/token
+    ports:
+      - "9200:9200"
+    networks:
+      - elastic
+      - soc-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -u elastic:${ELASTIC_PASSWORD} http://elasticsearch:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    entrypoint: >
+      bash -c "
+        /usr/local/bin/docker-entrypoint.sh &
+        ES_PID=\$$!;
+
+        echo 'Waiting for Elasticsearch to be ready...';
+        until curl -sf -u elastic:\${ELASTIC_PASSWORD} http://elasticsearch:9200/_cluster/health; do
+          sleep 5;
+        done;
+
+        TOKEN_FILE=/token/kibana_service_token;
+        chmod 777 /token || true;
+
+        if [ ! -f \"\$$TOKEN_FILE\" ]; then
+          echo 'Generating Kibana service token...';
+          elasticsearch-service-tokens delete elastic/kibana kibana_token 2>/dev/null || true;
+          TOKEN=\$$(elasticsearch-service-tokens create elastic/kibana kibana_token | awk '{print \$$NF}');
+          echo \"\$$TOKEN\" > \"\$$TOKEN_FILE\";
+          echo 'Token saved.';
+        else
+          echo 'Token already exists, skipping.';
+        fi;
+
+        wait \$$ES_PID;
+      "
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.3.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - kibana-token:/token:ro
+    entrypoint: >
+      bash -c "
+        echo 'Waiting for Kibana service token...';
+        for i in \$(seq 1 30); do
+          [ -s /token/kibana_service_token ] && break;
+          echo \"Attempt \$$i: token not ready, waiting 5s...\";
+          sleep 5;
+        done;
+        if [ ! -s /token/kibana_service_token ]; then
+          echo 'ERROR: Token file never appeared.';
+          exit 1;
+        fi;
+        TOKEN=\$$(cat /token/kibana_service_token);
+        export ELASTICSEARCH_SERVICEACCOUNTTOKEN=\$$TOKEN;
+        exec /bin/tini -- /usr/local/bin/kibana-docker
+      "
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - elastic
+      - soc-net
+    restart: unless-stopped
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:9.3.0
+    container_name: filebeat
+    user: "0:0"
+    env_file:
+      - .env
+    command:
+      - filebeat
+      - -e
+      - --strict.perms=false
+    volumes:
+      - ./data_ingestion/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - filebeatdata:/usr/share/filebeat/data
+    depends_on:
+      - elasticsearch
+    networks:
+      - elastic
+      - soc-net
+    restart: unless-stopped
+
+  cortex:
+    image: thehiveproject/cortex:latest
+    container_name: cortex
+    restart: unless-stopped
+    ports:
+      - "9001:9001"
+    environment:
+      - job_directory=/tmp/cortex-jobs
+      - docker_job_directory=/tmp/cortex-jobs
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - PLAY_SECRET_KEY=${PLAY_SECRET_KEY}
+    entrypoint: >
+      sh -c "mkdir -p /tmp/cortex-jobs && chmod 777 /tmp/cortex-jobs && exec /opt/cortex/entrypoint"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/cortex-jobs:/tmp/cortex-jobs
+      - ./cortex/logs:/var/log/cortex
+      - ./cortex/application.conf:/etc/cortex/application.conf
+    networks:
+      - elastic
+      - soc-net
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  pipeline:
+    build:
+      context: ..
+      dockerfile: elasticsearch/Dockerfile
+    container_name: pipeline
+    networks:
+      - elastic
+    env_file:
+      - .env
+    volumes:
+      - ./:/app
+      - ../:/vx
+
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app
+    entrypoint: ["bash", "/app/entrypoint.sh"]
+    depends_on:
+      - elasticsearch
+      - filebeat
+    restart: unless-stopped
+
+  scorer:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: scorer
+    env_file:
+      - .env
+    volumes:
+      - ./scoring:/app
+      - ../:/vx
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app
+    entrypoint: >
+      bash -c "
+        python3 /app/cortex_scorer.py --loop --workers 8  --limit 500 --ioc-type cve &
+        python3 /app/cortex_scorer.py --loop --workers 8  --limit 500 --ioc-type ransomware &
+        python3 /app/cortex_scorer.py --loop --workers 8  --limit 500 --ioc-type wallet &
+        python3 /app/cortex_scorer.py --loop --workers 2  --limit 30  --ioc-type ip &
+        python3 /app/cortex_scorer.py --loop --workers 2  --limit 30  --ioc-type url &
+        python3 /app/cortex_scorer.py --loop --workers 2  --limit 30  --ioc-type domain &
+        python3 /app/cortex_scorer.py --loop --workers 2  --limit 30  --ioc-type hash &
+        wait
+      "
+    networks:
+      - elastic
+      - soc-net
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      cortex:
+        condition: service_started
+    restart: unless-stopped
+
+  ti-pipeline:
+    build:
+      context: .
+      dockerfile: poisoning_detection/Dockerfile
+    container_name: poisoning_detection
+    entrypoint: >
+      bash -c "
+        echo '[TI-PIPELINE] Waiting 1h for scorer warmup...';
+        sleep 3600;
+
+        while true; do
+          echo '[TI-PIPELINE] Starting run — '$(date -u);
+          python -u /app/poisoning_detection/pipeline/run_pipeline_production.py;
+          echo '[TI-PIPELINE] Done. Sleeping 24h...';
+          sleep 86400;
+        done
+      "
+    working_dir: /app/poisoning_detection
+    environment:
+      - DATA_MODE=${DATA_MODE:-elasticsearch}
+      - ELASTIC_HOST=${ES_URL:-http://elasticsearch:9200}
+      - ELASTIC_SOURCE_INDEX=${ES_SOURCE_INDEX:-ti_*}
+      - ELASTIC_USER=${ELASTIC_USER:-}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - MAX_DOCS=${MAX_DOCS:-0}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-4o-mini}
+      - OPENROUTER_FALLBACK_MODELS=${OPENROUTER_FALLBACK_MODELS:-openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct,anthropic/claude-3.5-sonnet}
+      - LLM_MAX=${LLM_MAX:-500}
+      - SKIP_LLM=${SKIP_LLM:-false}
+      - OUTPUT_DIR=/app/poisoning_detection/output
+      - PYTHONPATH=/app
+    volumes:
+      - ./:/app
+      - ../:/vx
+
+    restart: unless-stopped
+    networks:
+      - elastic
+      - soc-net
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      scorer:
+        condition: service_started
+      pipeline:
+        condition: service_started
+
+  ti-feedback:
+    build:
+      context: .
+      dockerfile: poisoning_detection/feedback/Dockerfile
+    container_name: feedback_loop
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      ELASTIC_HOST:     "http://elasticsearch:9200"
+      ELASTIC_USER:     "${ELASTIC_USER:-elastic}"
+      ELASTIC_PASSWORD: "${ELASTIC_PASSWORD}"
+      MISP_FETCH_BATCH_SIZE: "200"        
+      PYTHONPATH: "/app:/app/poisoning_detection"
+      MODEL_DIR:  "/app/poisoning_detection/models"
+      LOG_LEVEL:  "INFO"
+    volumes:
+      - ./poisoning_detection:/app/poisoning_detection
+    networks:
+      - elastic
+      - soc-net
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+volumes:
+  es-data:
+    driver: local
+  filebeatdata:
+    driver: local
+  kibana-token:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "mode=777"
+  cortex_data:
+
+networks:
+  elastic:
+    driver: bridge
+  soc-net:
+    name: soc-net
+    external: true

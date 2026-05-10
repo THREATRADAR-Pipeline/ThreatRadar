@@ -1,0 +1,191 @@
+filebeat.inputs:
+  - type: httpjson
+    id: abuseurl
+    interval: 10080m
+    request.method: GET
+    request.url: https://urlhaus-api.abuse.ch/v1/urls/recent/
+    request.transforms:
+      - set:
+          target: header.Auth-Key
+          value: "${ABUSE_API_KEY}"
+    response.split:
+      target: body.urls
+    tags: [threatintel-abuseurls, forwarded]
+    fields_under_root: true
+    fields:
+      threat.feed.name: "Abuse.ch URLhaus"
+      event.dataset: ti_abuseurl
+      event.category: threat
+      event.type: indicator
+
+  - type: httpjson
+    id: abusemalware
+    interval: 10080m
+    request.method: GET
+    request.url: https://urlhaus-api.abuse.ch/v1/payloads/recent/
+    request.transforms:
+      - set:
+          target: header.Auth-Key
+          value: "${ABUSE_API_KEY}"
+    response.split:
+      target: body.payloads
+    tags: [threatintel-abusemalware, forwarded]
+    fields_under_root: true
+    fields:
+      threat.feed.name: "Abuse.ch URLhaus Payloads"
+      event.dataset: ti_abusemalware
+      event.category: threat
+      event.type: indicator
+
+  - type: httpjson
+    id: feodotracker
+    interval: 10080m
+    request.method: GET
+    request.url: https://feodotracker.abuse.ch/downloads/ipblocklist.json
+    tags: [threatintel-feodo, forwarded]
+    fields_under_root: true
+    fields:
+      threat.feed.name: "Abuse.ch Feodo Tracker"
+      event.dataset: ti_feodo
+      event.category: threat
+      event.type: indicator
+
+  - type: httpjson
+    id: threatfox
+    interval: 10080m
+    request.method: POST
+    request.url: https://threatfox-api.abuse.ch/api/v1/
+    request.body:
+      query: "get_iocs"
+      days: 1
+    request.transforms:
+      - set:
+          target: header.Content-Type
+          value: "application/json"
+      - set:
+          target: header.Auth-Key
+          value: "${ABUSE_API_KEY}"
+    response.split:
+      target: body.data
+    tags: [threatintel-threatfox, forwarded]
+    fields_under_root: true
+    fields:
+      threat.feed.name: "Abuse.ch ThreatFox"
+      event.dataset: ti_threatfox
+      event.category: threat
+      event.type: indicator
+
+  - type: httpjson
+    id: otx
+    interval: 10080m
+    request.method: GET
+    request.url: https://otx.alienvault.com/api/v1/indicators/export
+    request.transforms:
+      - set:
+          target: header.X-OTX-API-KEY
+          value: "${OTX_API_KEY}"
+      - set:
+          target: url.params.types
+          value: "domain,IPv4,hostname,url,FileHash-MD5,FileHash-SHA256"
+      - set:
+          target: url.params.modified_since
+          value: '{{if .cursor.last_published}}{{.cursor.last_published}}{{else}}{{formatDate (now (parseDuration "-168h")) "2006-01-02T15:04:05"}}{{end}}'
+    response.pagination:
+      - set:
+          target: url.params.page
+          value: '{{.last_response.body.next}}'
+          fail_on_template_error: true
+    cursor:
+      last_published:
+        value: '{{now | formatDate "2006-01-02T15:04:05"}}'
+    response.split:
+      target: body.results
+    tags: [threatintel-otx, forwarded]
+    fields_under_root: true
+    fields:
+      threat.feed.name: "AlienVault OTX"
+      event.dataset: ti_otx
+      event.category: threat
+      event.type: indicator
+
+  - type: httpjson
+    id: cisa-kev
+    interval: 10080m
+    request.method: GET
+    request.url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    response.split:
+      target: body.vulnerabilities
+      type: array
+    tags: [threatintel-cisa, forwarded]
+    fields_under_root: true
+    fields:
+      threat.feed.name: "CISA Known Exploited Vulnerabilities"
+      event.dataset: ti_cisa
+      event.category: threat
+      event.type: indicator
+
+  - type: httpjson
+    id: ransomware-live
+    interval: 10080m
+    request.method: GET
+    request.url: https://data.ransomware.live/victims.json
+    tags: [threatintel-ransomware, forwarded]
+    fields_under_root: true
+    fields:
+      threat.feed.name: "Ransomware.live"
+      event.dataset: ti_ransomware
+      event.category: threat
+      event.type: indicator
+
+  - type: httpjson
+    id: ransomwhere
+    interval: 10080m
+    request.method: GET
+    request.url: https://api.ransomwhe.re/export
+    tags: [threatintel-ransomwhere, forwarded]
+    fields_under_root: true
+    fields:
+      threat.feed.name: "Ransomwhere"
+      event.dataset: ti_ransomwhere
+      event.category: threat
+      event.type: indicator
+      threat.indicator.type: "cryptocurrency-wallet"
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  username: "elastic"
+  password: "${ELASTIC_PASSWORD}"
+  indices:
+    - index: "ti_abuseurl-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "threatintel-abuseurls"
+    - index: "ti_abusemalware-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "threatintel-abusemalware"
+    - index: "ti_feodo-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "threatintel-feodo"
+    - index: "ti_threatfox-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "threatintel-threatfox"
+    - index: "ti_otx-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "threatintel-otx"
+    - index: "ti_cisa-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "threatintel-cisa"
+    - index: "ti_ransomware-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "threatintel-ransomware"
+    - index: "ti_ransomwhere-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "threatintel-ransomwhere"
+
+setup.kibana:
+  host: "http://kibana:5601"
+
+setup.template.enabled: false
+setup.ilm.enabled: false
+
+logging.level: info
+logging.to_files: false
