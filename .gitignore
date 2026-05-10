@@ -58,3 +58,4 @@ output/
 tmp/
 temp/
 elasticsearch/.dockerignore
+elasticsearch/cortex/application.conf
