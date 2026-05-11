@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-21",
+  "description": "Semantic contradiction detection framework. Update when threat actor behavior patterns change.",
+  "contradiction_classes": [
+    {
+      "code": "C1",
+      "name": "APT_SECTOR_MISMATCH",
+      "description": "The attributed threat group has no known history targeting this sector",
+      "severity": "medium",
+      "mitigates": "Validates APT-sector pairings against known campaigns",
+      "external_source": "MITRE ATT&CK, threat reports, historical analyst assessments"
+    },
+    {
+      "code": "C2",
+      "name": "TTP_MALWARE_MISMATCH",
+      "description": "The listed TTPs are inconsistent with the malware family's known behavior",
+      "severity": "high",
+      "mitigates": "Validates TTP-malware associations via MITRE ATT&CK",
+      "external_source": "MITRE ATT&CK Enterprise (authoritative)",
+      "validation_required": true
+    },
+    {
+      "code": "C3",
+      "name": "TTP_SECTOR_MISMATCH",
+      "description": "The listed TTPs do not align with attacks on this type of sector",
+      "severity": "medium",
+      "mitigates": "Checks if TTPs are sector-appropriate (e.g., ICS exploits for industrial, not finance)",
+      "external_source": "Sector-specific threat reports, MITRE mappings"
+    },
+    {
+      "code": "C4",
+      "name": "SEVERITY_CONTEXT_MISMATCH",
+      "description": "The claimed severity is implausible given the malware family and sector",
+      "severity": "low",
+      "mitigates": "Detects inflated severity claims (e.g., script kiddie malware marked CRITICAL)",
+      "external_source": "CVE databases, malware capability assessments"
+    },
+    {
+      "code": "C5",
+      "name": "MALWARE_APT_MISMATCH",
+      "description": "This malware family is not associated with this APT group",
+      "severity": "high",
+      "mitigates": "Prevents fake attribution to known APTs",
+      "external_source": "MITRE ATT&CK, threat reports, malware analysis"
+    },
+    {
+      "code": "C6",
+      "name": "IMPLAUSIBLE_COMBINATION",
+      "description": "The overall combination of APT + malware + sector + TTPs has never been observed in real threat intelligence",
+      "severity": "high",
+      "mitigates": "Detects fabricated campaigns with impossible patterns",
+      "external_source": "Historical threat intelligence, analyst expertise"
+    },
+    {
+      "code": "C7",
+      "name": "FEED_CREDIBILITY_CONCERN",
+      "description": "Based on the feed description, single-source high-severity claims are a known injection vector",
+      "severity": "medium",
+      "mitigates": "Flags non-corroborated high-severity claims from unreliable feeds",
+      "external_source": "Feed reputation tracking, historical poisoning patterns"
+    },
+    {
+      "code": "C8",
+      "name": "INFRASTRUCTURE_IMPLAUSIBLE",
+      "description": "The infrastructure age contradicts the claimed sophistication of the attributed actor",
+      "severity": "medium",
+      "mitigates": "Detects APT attribution to recently-registered infrastructure",
+      "external_source": "WHOIS data, infrastructure age analysis, APT maturity profiles"
+    }
+  ],
+  "notes": [
+    "C2 is the ONLY contradiction class with automatic validation (MITRE ATT&CK).",
+    "C1, C3-C8 rely on LLM semantic reasoning (no external validation).",
+    "Update this file when threat actor behavior patterns shift (e.g., new APT debuts, malware evolution).",
+    "Version this file in git to track evolution of contradiction definitions."
+  ]
+}

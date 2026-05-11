@@ -64,3 +64,11 @@ misp/misp-db-backup.sql
 misp/misp-db-backup.sql
 
 misp/misp-data.tar.gz
+elasticsearch/poisoning_detection/.trunk/trunk.yaml
+.gitignore
+elasticsearch/poisoning_detection/.trunk/configs/.isort.cfg
+elasticsearch/poisoning_detection/.trunk/configs/.markdownlint.yaml
+elasticsearch/poisoning_detection/.trunk/configs/.shellcheckrc
+elasticsearch/poisoning_detection/.trunk/configs/.yamllint.yaml
+elasticsearch/poisoning_detection/.trunk/configs/ruff.toml
+elasticsearch/poisoning_detection/.trunk/configs/.hadolint.yaml
