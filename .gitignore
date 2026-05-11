@@ -31,7 +31,6 @@ pip-wheel-metadata/
 
 # Local environment files
 .env
-.env.*
 *.local
 
 # Logs and runtime files

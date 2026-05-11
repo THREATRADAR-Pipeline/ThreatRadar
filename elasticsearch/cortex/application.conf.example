@@ -1,0 +1,20 @@
+play.http.secret.key = <your-secure-secret-key>
+
+search {
+  index = cortex
+  uri = "http://elasticsearch:9200"
+  user = "elastic"
+  password = <your-secure-password>
+}
+
+job {
+  runner = [docker]
+  timeout = 30 minutes
+}
+
+docker {
+  host = "unix:///var/run/docker.sock"
+  autoRemove = true
+}
+
+play.http.context = "/"
