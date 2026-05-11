@@ -97,9 +97,11 @@ ThreatRadar runs as a set of Docker microservices organized into six sequential 
 │                                                      │                  │
 │                                                      ▼                  │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                 ANOMALY DETECTION                                 │  │
+│  │                          AI DETECTION                                 │  │
 │  │  anomaly_detector.py: IsolationForest model                      │  │
-│  │  → anomaly_score · ml_tier · poison_flag                          │  │
+│  │  → anomaly_score · ml_tier · poison_flag
+      llm_analyzer.py: LLM semantic contradition analyzer                        │  │
+│  │  → semantic_verdict · semantic_red_flags · llm_poison_score                       │  │
 │  └───────────────────────────────────────────────────────────────────┘  │
 │                                                      │                  │
 │                                                      ▼                  │
@@ -147,6 +149,7 @@ ThreatRadar runs as a set of Docker microservices organized into six sequential 
 | Cache and Queue | Redis | 7 | MISP session and queue management |
 | Runtime | Python | 3.11+ | All pipeline scripts |
 | ML | scikit-learn | ≥ 1.2.0 | IsolationForest anomaly detection |
+| LLM & Semantic Analysis | OpenRouter(GPT-4o) | latest | Semantic contradiction detection for poisoned threat intelligence |
 | Data Processing | pandas / numpy | ≥ 2.0 / ≥ 1.24 | Feature engineering and data wrangling |
 | MISP Client | PyMISP | ≥ 2.4.170 | Programmatic MISP interaction |
 | Elasticsearch Client | elasticsearch-py | ≥ 9.0 | Elasticsearch bulk operations |
@@ -382,6 +385,16 @@ CONTAMINATION_MAX=0.03       # IsolationForest contamination parameter (range: 0
 ML_CONTAMINATION=0.02        # Contamination used during retraining runs
 REPORT_MAX_DETAIL_IOCS=250   # Maximum IOCs included in detail section of PDF reports
 OUTPUT_DIR=output            # Output directory for pipeline reports
+```
+#### OpenRouter LLM Configuration
+
+```dotenv
+OPENROUTER_API_KEY=<your_openrouter_api_key_here>
+OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_FALLBACK_MODELS=openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct,anthropic/claude-3.5-sonnet
+LLM_CALL_TIMEOUT=180
+LLM_MAX=500
+SKIP_LLM=false
 ```
 
 #### Feedback Loop and Retraining
