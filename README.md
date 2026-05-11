@@ -1,6 +1,6 @@
 # ThreatRadar
 
-An end-to-end Threat Intelligence pipeline with ML-powered feed poisoning detection, Cortex-driven IOC scoring, and MISP integration.
+An end-to-end Threat Intelligence pipeline with AI-powered feed poisoning detection, Cortex-driven IOC scoring, and MISP integration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -38,9 +38,9 @@ An end-to-end Threat Intelligence pipeline with ML-powered feed poisoning detect
 
 ## Overview
 
-ThreatRadar is an open-source Threat Intelligence (TI) pipeline designed for Security Operations Centers and threat intelligence teams. It aggregates IOCs from multiple sources, enriches and scores them through Cortex analyzers, and detects statistical anomalies in feed data using an IsolationForest model before results reach analyst queues.
+ThreatRadar is an open-source Threat Intelligence (TI) pipeline designed for Security Operations Centers and threat intelligence teams. It aggregates IOCs from multiple sources, enriches and scores them through Cortex analyzers, and detects statistical anomalies and semantic contradictions in feed data using an LLMs and IsolationForest model before results reach analyst queues.
 
-A core design goal is addressing **feed poisoning**: the injection of false or misleading IOCs into threat intelligence feeds to manipulate defender decisions. ThreatRadar handles this at the pipeline level through ML-based anomaly detection and closed-loop feedback from analyst sightings in MISP.
+A core design goal is addressing **feed poisoning**: the injection of false or misleading IOCs into threat intelligence feeds to manipulate defender decisions. ThreatRadar handles this at the pipeline level through AI detection and closed-loop feedback from analyst sightings in MISP.
 
 **What ThreatRadar does:**
 
@@ -48,7 +48,9 @@ A core design goal is addressing **feed poisoning**: the injection of false or m
 - Normalizes and classifies IOCs into seven typed Elasticsearch indices
 - Enriches each IOC with MITRE ATT&CK mappings, geo-IP, CVSS scores, and actor attribution
 - Scores IOCs via Cortex analyzers (VirusTotal, AbuseIPDB, Maltiverse, IPinfo, Urlscan, HybridAnalysis)
-- Flags statistically anomalous IOCs using a trained IsolationForest model
+- Flags statistically anomalous IOCs using a trained IsolationForest model and an LLM that semantically validates IOCs against 8 contradiction classes (APT-sector mismatches, malware incompatibilities, implausible combinations, etc.) to determine if the intelligence is safe or poisoned.
+
+
 - Pushes validated, enriched IOCs to MISP with TLP tagging and distribution controls
 - Retrains the anomaly model using analyst sightings as a feedback signal
 
@@ -122,12 +124,13 @@ ThreatRadar runs as a set of Docker microservices organized into six sequential 
 - **Multi-source feed ingestion**: NVD, OTX, AbuseIPDB, EmergingThreats, SSL Blacklist, and security news RSS feeds included out of the box. Custom sources can be added without modifying core logic.
 - **Seven IOC type classifications**: IP addresses, URLs, file hashes, domains, CVEs, ransomware families, and cryptocurrency wallets, each routed to type-appropriate analyzers.
 - **Cortex analyzer integration**: Automated IOC interrogation across six intelligence services, producing normalized composite scores with severity tiers (CRITICAL / HIGH / MEDIUM / LOW) and recommended actions.
-- **ML anomaly detection**: A scikit-learn IsolationForest model with calibrated contamination scoring flags statistically unusual IOCs before they enter analyst queues.
+- **ML anomaly detection & LLM semantic validation**: A scikit-learn IsolationForest model with calibrated contamination scoring flags statistically unusual IOCs before they enter analyst queues. Flagged       IOCs then undergo LLM semantic analysis (OpenAI GPT-4o via OpenRouter) that validates intelligence against 8 contradiction classes-checking for APT-sector mismatches, malware, incompatibilities and          implausible threat combinations to determine if intelligence is COHERENT, SUSPICIOUS or CONTRADICTED.
 - **Feedback-driven retraining**: MISP sightings and analyst confirmations trigger incremental model retraining with configurable signal thresholds and cooldown periods.
 - **Automated MISP publication**: Enriched IOCs are bulk-pushed to MISP with TLP classification, corroboration distribution tags, and configurable worker concurrency.
 - **Kibana dashboards**: Pre-built dashboards for feed coverage, IOC scoring distributions, poisoning alerts, and pipeline throughput.
 - **Fully containerized**: Nine Docker services with health checks, declared inter-service dependencies, and a shared named network.
 - **No hardcoded credentials**: All secrets are injected via environment variables. The `.gitignore` excludes `.env` by default.
+
 
 ---
 
@@ -196,6 +199,8 @@ git --version
 | AbuseIPDB | Yes | [abuseipdb.com/account/api](https://www.abuseipdb.com/account/api) |
 | AlienVault OTX | Yes | [otx.alienvault.com](https://otx.alienvault.com) → API Keys |
 | MISP | Yes| Self-hosted via the included Docker stack |
+| OpenRouter | Yes | [openrouter.ai/keys](https://openrouter.ai/keys) → New Key |
+
 
 > **Security note:** Never commit `.env` files to version control. The repository's `.gitignore` excludes `.env` by default, but verify this before pushing.
 
@@ -819,3 +824,4 @@ ThreatRadar is released under the [MIT License](LICENSE).
 - [AlienVault OTX](https://otx.alienvault.com/) : Open Threat Exchange
 - [EmergingThreats](https://rules.emergingthreats.net/) : network-level threat intelligence
 - [NIST NVD](https://nvd.nist.gov/) : National Vulnerability Database
+- [OpenRouter](https://openrouter.ai/) : Cloud-based LLM API gateway
