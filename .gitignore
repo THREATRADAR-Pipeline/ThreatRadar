@@ -61,3 +61,7 @@ elasticsearch/.dockerignore
 elasticsearch/cortex/application.conf
 
 misp/misp-db-backup.sql
+
+misp/misp-db-backup.sql
+
+misp/misp-data.tar.gz
