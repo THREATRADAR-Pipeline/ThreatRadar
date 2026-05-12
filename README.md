@@ -10,7 +10,7 @@ An end-to-end Threat Intelligence pipeline with AI-powered feed poisoning detect
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://www.docker.com/)
 [![Cortex](https://img.shields.io/badge/Cortex-TheHive-orange)](https://github.com/TheHive-Project/Cortex)
 [![MISP](https://img.shields.io/badge/MISP-Threat%20Sharing-red)](https://www.misp-project.org/)
-[![Medium](https://img.shields.io/badge/Medium-Article-black?logo=medium)](https://medium.com/@your-article-link)
+[![Medium](https://img.shields.io/badge/Medium-Article-black?logo=medium)](https://medium.com/@salmactf/designing-and-implementing-threatradar-an-open-source-feed-based-threat-intelligence-pipeline-73d568da8f27)
 ---
 
 ## Table of Contents
@@ -50,9 +50,10 @@ A core design goal is addressing **feed poisoning**: the injection of false or m
 - Scores IOCs via Cortex analyzers (VirusTotal, AbuseIPDB, Maltiverse, IPinfo, Urlscan, HybridAnalysis)
 - Flags statistically anomalous IOCs using a trained IsolationForest model and an LLM that semantically validates IOCs against 8 contradiction classes (APT-sector mismatches, malware incompatibilities, implausible combinations, etc.) to determine if the intelligence is safe or poisoned.
 
-
 - Pushes validated, enriched IOCs to MISP with TLP tagging and distribution controls
 - Retrains the anomaly model using analyst sightings as a feedback signal
+- Keeps MISP events in sync daily with the latest enrichment scores and verdicts
+- Expires stale IOC data from Elasticsearch on a 180-day rolling window, protecting permanent reference datasets like CVEs, ransomware families, and crypto wallets
 
 > **Read the full project write-up on Medium:** [Designing and Implementing THREATRADAR: An Open-Source Feed-Based Threat Intelligence Pipeline](https://medium.com/@salmactf/designing-and-implementing-threatradar-an-open-source-feed-based-threat-intelligence-pipeline-73d568da8f27)
 
@@ -68,14 +69,16 @@ ThreatRadar runs as a set of Docker microservices organized into nine sequential
 
 ## Features
 
-- **Multi-source feed ingestion**: NVD, OTX, AbuseIPDB, EmergingThreats, SSL Blacklist, and security news RSS feeds included out of the box. Custom sources can be added without modifying core logic.
+- **Multi-source feed ingestion**: NVD, OTX, AbuseIPDB, EmergingThreats, SSL Blacklist, and many others. Custom sources can be added without modifying core logic.
 - **Seven IOC type classifications**: IP addresses, URLs, file hashes, domains, CVEs, ransomware families, and cryptocurrency wallets, each routed to type-appropriate analyzers.
 - **Cortex analyzer integration**: Automated IOC interrogation across six intelligence services, producing normalized composite scores with severity tiers (CRITICAL / HIGH / MEDIUM / LOW) and recommended actions.
 - **ML anomaly detection & LLM semantic validation**: A scikit-learn IsolationForest model with calibrated contamination scoring flags statistically unusual IOCs before they enter analyst queues.
-   Flagged IOCs then undergo LLM semantic analysis (OpenAI GPT-4o via OpenRouter) that validates intelligence against 8 contradiction classes, checking for APT-sector mismatches, malware, incompatibilities, and  implausible threat combinations to determine if intelligence is COHERENT, SUSPICIOUS, or CONTRADICTED.
+   Flagged IOCs then undergo LLM semantic analysis (OpenAI GPT-4o via OpenRouter) that validates intelligence against 8 contradiction classes, checking for APT-sector mismatches, malware, incompatibilities, and threat combinations to determine if intelligence is COHERENT, SUSPICIOUS, or CONTRADICTED.
+- **Automated MISP publication**: Enriched IOCs are bulk-pushed to MISP with TLP classification, distribution tags, and configurable worker concurrency.
+- **MISP daily refresh**: Keeps MISP events in sync with the latest enrichment scores and verdicts, and requeues any IOCs whose MISP events have gone missing.
 - **Feedback-driven retraining**: MISP sightings and analyst confirmations trigger incremental model retraining with configurable signal thresholds and cooldown periods.
-- **Automated MISP publication**: Enriched IOCs are bulk-pushed to MISP with TLP classification, corroboration distribution tags, and configurable worker concurrency.
-- **Kibana dashboards**: Pre-built dashboards for feed coverage, IOC scoring distributions, poisoning alerts, and pipeline throughput.
+- **Kibana dashboards**: Pre-built dashboards for feed coverage, IOC scoring distributions, SOC intelligence, and pipeline throughput.
+- **Data retention**: Automatically removes expired IOC data from Elasticsearch on a 180-day rolling window, with permanent protection for reference datasets like CVEs, ransomware families, and crypto wallets.
 - **Fully containerized**: Nine Docker services with health checks, declared inter-service dependencies, and a shared named network.
 - **No hardcoded credentials**: All secrets are injected via environment variables. The `.gitignore` excludes `.env` by default.
 
@@ -702,12 +705,12 @@ bash elasticsearch/kibana/import.sh
 
 Included dashboards:
 
-- **Feed coverage**: per-source IOC volume over time
-- **IOC scoring distribution**: histogram of cortex scores across severity tiers
-- **Poisoning alerts**: anomaly-flagged IOCs with score breakdowns
-- **Pipeline health**: ingestion rate, scorer throughput, index sizes
-- **IOC type breakdown**: relative volume across all seven IOC types
-
+- **Pipeline overview**: Relative volume across all seven IOC types,Data sources,Pipeline health
+- **Threat intelligence**: MITRE Tactics Heatmap, AVG CVSS score,OWASP Distribution
+- **Threat Actor Intelligence**: Top Active Groups, crititcal sector victims
+- **Data Scoring and Poisoning Detection**: Cortex, ML, and LLM scores across IOCs 
+- **SOC Analyst View**: Total of Analyst Confirmed IOCs,Total of pushed IOCs
+  
 ---
 
 ## Troubleshooting
