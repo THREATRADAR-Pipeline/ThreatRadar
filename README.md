@@ -38,7 +38,7 @@ An end-to-end Threat Intelligence pipeline with AI-powered feed poisoning detect
 
 ## Overview
 
-ThreatRadar is an open-source Threat Intelligence (TI) pipeline designed for Security Operations Centers and threat intelligence teams. It aggregates IOCs from multiple sources, enriches and scores them through Cortex analyzers, and detects statistical anomalies and semantic contradictions in feed data using an LLM and IsolationForest model before results reach analyst queues.
+ThreatRadar is an open-source Threat Intelligence pipeline designed for Security Operations Centers and threat intelligence teams. It aggregates IOCs from multiple sources, enriches and scores them through Cortex analyzers, and detects statistical anomalies and semantic contradictions in feed data using an LLM and IsolationForest model before results reach analyst queues.
 
 A core design goal is addressing **feed poisoning**: the injection of false or misleading IOCs into threat intelligence feeds to manipulate defender decisions. ThreatRadar handles this at the pipeline level through AI detection and closed-loop feedback from analyst sightings in MISP.
 
