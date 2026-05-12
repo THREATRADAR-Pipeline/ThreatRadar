@@ -4,31 +4,6 @@ THREATRADAR TI Processor
 Reads raw threat intelligence feeds from Elasticsearch, deduplicates and
 normalises them into clean IOC documents, then upserts the results into
 the output indices.
-
-Step 1
-    Scrolls all raw source indices
-
-Step 2
-    Each feed has a dedicated extractor (extract_feodo, extract_otx, …) that
-    parses the raw message field and returns a typed (ioc_value, ioc_type, extra)
-    tuple.
-
-Step 3
-    Invalid, private, reserved, or known-benign values are dropped
-
-Step 4
-    IOCs seen across multiple feeds within the same run are merged in memory.
-    Source metadata (feed_name, feed_reputation, tags) is accumulated per IOC.
-
-Step 5
-    Clean documents are written to the output indices ti_ip, ti_url, ti_hash,
-    ti_domain, ti_cve, ti_ransomware, ti_wallet
-
-Downstream reset
-    Every upsert clears all downstream fields (_DOWNSTREAM_RESET and
-    _ENRICHED_SCORE_RESET), forcing enricher, cortex_scorer, ML, LLM, and
-    fusion stages to re-process the document on their next run.
-
 © 2026 THREATRADAR Team
 """
 from __future__ import annotations

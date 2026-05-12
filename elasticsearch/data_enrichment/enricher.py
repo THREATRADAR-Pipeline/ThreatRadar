@@ -1,27 +1,6 @@
 #!/usr/bin/env python3
 """
 THREATRADAR Enricher takes raw IOCs from Elasticsearch and attaches structured context.
-Step 1
-    Queries ti_cve for CVEs never fetched or stale (> NVD_RETRY_DAYS, default 7).
-
-Step 2
-    Downloads the MITRE ATT&CK Enterprise JSON bundle
-    Parses it into:
-        - malware_map  : software/group name
-        - group_map    : software name
-    Mines x_mitre_aliases and merges them into _ATTACK_ALIASES for variant resolution.
-
-Step 3
-    Runs MITRE enrichment on ti_ransomware in isolation so group-level technique
-    counts are ready before the context map is built.
-
-Step 4
-    Scrolls all ti_ransomware documents and builds per-group aggregate statistics
-    for use in scoring.
-
-Step 5
-    Index enrich — applies enrich_mitre, enrich_owasp, compute_score_fields across all indices
-
 © 2026 THREATRADAR Team
 """
 from __future__ import annotations
