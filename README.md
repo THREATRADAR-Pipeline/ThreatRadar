@@ -769,9 +769,18 @@ ThreatRadar is released under the [MIT License](LICENSE).
 - [TheHive Project / Cortex](https://github.com/TheHive-Project/Cortex) : analyzer orchestration engine
 - [MISP Project](https://www.misp-project.org/) : open-source threat intelligence sharing platform
 - [Elastic Stack](https://www.elastic.co/) : Elasticsearch, Kibana, and Filebeat
-- [scikit-learn](https://scikit-learn.org/) : IsolationForest implementation
 - [abuse.ch](https://abuse.ch/) : SSL Blacklist and malware tracking feeds
 - [AlienVault OTX](https://otx.alienvault.com/) : Open Threat Exchange
 - [EmergingThreats](https://rules.emergingthreats.net/) : network-level threat intelligence
+- [OpenPhish](https://openphish.com/) : community phishing URL feed
+- [CERT Polska](https://cert.pl/) : phishing domain blocklist
+- [Ransomware.live](https://ransomware.live/) : ransomware victim tracking feed
+- [Ransomwhere](https://ransomwhe.re/) : ransomware cryptocurrency payment tracking
+- [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) : Known Exploited Vulnerabilities catalog
 - [NIST NVD](https://nvd.nist.gov/) : National Vulnerability Database
+- [MITRE ATT&CK](https://attack.mitre.org/) : enterprise threat technique and actor knowledge base
+- [OWASP Top 10](https://owasp.org/Top10/) : web application security risk classification
+- [scikit-learn](https://scikit-learn.org/) : IsolationForest implementation
 - [OpenRouter](https://openrouter.ai/) : Cloud-based LLM API gateway
+
+
