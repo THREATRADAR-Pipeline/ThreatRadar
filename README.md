@@ -38,7 +38,7 @@ An end-to-end Threat Intelligence pipeline with AI-powered feed poisoning detect
 
 ## Overview
 
-ThreatRadar is an open-source Threat Intelligence (TI) pipeline designed for Security Operations Centers and threat intelligence teams. It aggregates IOCs from multiple sources, enriches and scores them through Cortex analyzers, and detects statistical anomalies and semantic contradictions in feed data using an LLMs and IsolationForest model before results reach analyst queues.
+ThreatRadar is an open-source Threat Intelligence (TI) pipeline designed for Security Operations Centers and threat intelligence teams. It aggregates IOCs from multiple sources, enriches and scores them through Cortex analyzers, and detects statistical anomalies and semantic contradictions in feed data using an LLM and IsolationForest model before results reach analyst queues.
 
 A core design goal is addressing **feed poisoning**: the injection of false or misleading IOCs into threat intelligence feeds to manipulate defender decisions. ThreatRadar handles this at the pipeline level through AI detection and closed-loop feedback from analyst sightings in MISP.
 
@@ -46,7 +46,7 @@ A core design goal is addressing **feed poisoning**: the injection of false or m
 
 - Ingests IOCs from multiple open and commercial feeds
 - Normalizes and classifies IOCs into seven typed Elasticsearch indices
-- Enriches each IOC with MITRE ATT&CK mappings, geo-IP, CVSS scores, and actor attribution
+- Enriches each IOC with MITRE ATT&CK mappings, CVSS scores, and actor attribution
 - Scores IOCs via Cortex analyzers (VirusTotal, AbuseIPDB, Maltiverse, IPinfo, Urlscan, HybridAnalysis)
 - Flags statistically anomalous IOCs using a trained IsolationForest model and an LLM that semantically validates IOCs against 8 contradiction classes (APT-sector mismatches, malware incompatibilities, implausible combinations, etc.) to determine if the intelligence is safe or poisoned.
 
@@ -71,7 +71,8 @@ ThreatRadar runs as a set of Docker microservices organized into nine sequential
 - **Multi-source feed ingestion**: NVD, OTX, AbuseIPDB, EmergingThreats, SSL Blacklist, and security news RSS feeds included out of the box. Custom sources can be added without modifying core logic.
 - **Seven IOC type classifications**: IP addresses, URLs, file hashes, domains, CVEs, ransomware families, and cryptocurrency wallets, each routed to type-appropriate analyzers.
 - **Cortex analyzer integration**: Automated IOC interrogation across six intelligence services, producing normalized composite scores with severity tiers (CRITICAL / HIGH / MEDIUM / LOW) and recommended actions.
-- **ML anomaly detection & LLM semantic validation**: A scikit-learn IsolationForest model with calibrated contamination scoring flags statistically unusual IOCs before they enter analyst queues. Flagged       IOCs then undergo LLM semantic analysis (OpenAI GPT-4o via OpenRouter) that validates intelligence against 8 contradiction classes-checking for APT-sector mismatches, malware, incompatibilities and          implausible threat combinations to determine if intelligence is COHERENT, SUSPICIOUS or CONTRADICTED.
+- **ML anomaly detection & LLM semantic validation**: A scikit-learn IsolationForest model with calibrated contamination scoring flags statistically unusual IOCs before they enter analyst queues.
+   Flagged IOCs then undergo LLM semantic analysis (OpenAI GPT-4o via OpenRouter) that validates intelligence against 8 contradiction classes, checking for APT-sector mismatches, malware, incompatibilities, and  implausible threat combinations to determine if intelligence is COHERENT, SUSPICIOUS, or CONTRADICTED.
 - **Feedback-driven retraining**: MISP sightings and analyst confirmations trigger incremental model retraining with configurable signal thresholds and cooldown periods.
 - **Automated MISP publication**: Enriched IOCs are bulk-pushed to MISP with TLP classification, corroboration distribution tags, and configurable worker concurrency.
 - **Kibana dashboards**: Pre-built dashboards for feed coverage, IOC scoring distributions, poisoning alerts, and pipeline throughput.
@@ -509,7 +510,7 @@ MISP_BULK_FLUSH=500                # Documents per bulk flush operation
 
 # Bootstrap credentials (used on first startup only)
 MISP_ADMIN_EMAIL=admin@admin.test
-MISP_ADMIN_PASSPHRASE=<strong_password>
+MISP_ADMIN_PASSPHRASE=admin #misp default configuration
 BASE_URL=https://misp:443
 MISP_EXTERNAL_BASEURL=https://misp:443
 ADMIN_KEY=<admin_key>
