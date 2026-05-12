@@ -426,19 +426,7 @@ ANALYZER_IDS: dict[str, str] = {
 
 #### Built-in Feeds
 
-| Feed | IOC Types | Source |
-|---|---|---|
-| NVD CVE Database | CVE | NIST NVD API |
-| AlienVault OTX | Multiple | OTX API |
-| AbuseIPDB | IP | AbuseIPDB API |
-| EmergingThreats Compromised IPs | IP | Public URL |
-| EmergingThreats Botnet C2 | IP | Public URL |
-| SSL Blacklist (abuse.ch) | SSL/Hash | abuse.ch CSV |
-| TheHackersNews | News/IOC | RSS |
-| BleepingComputer | News/IOC | RSS |
-| Cisco Talos Blog | News/IOC | RSS |
-| Palo Alto Unit 42 | News/IOC | RSS |
-| Kaspersky SecureList | News/IOC | RSS |
+![ThreatRadar Pipeline](feed-sources.png)
 
 #### Adding Custom URL-Based Feeds
 
