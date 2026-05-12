@@ -171,7 +171,7 @@ ThreatRadar/
 ├── elasticsearch/                    # Main pipeline
 │   ├── data_ingestion/               # Filebeat config and Python feeders
 │   ├── data_normalization/           # IOC type classification and deduplication
-│   ├── data_enrichment/              # MITRE, geo-IP, CVSS enrichment
+│   ├── data_enrichment/              # MITRE, CVSS enrichment
 │   ├── data_retention/               # Index lifecycle management
 │   ├── scoring/                      # Cortex scorer
 │   ├── poisoning_detection/          # ML anomaly detection
