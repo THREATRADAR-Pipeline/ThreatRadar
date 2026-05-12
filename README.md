@@ -54,7 +54,7 @@ A core design goal is addressing **feed poisoning**: the injection of false or m
 - Pushes validated, enriched IOCs to MISP with TLP tagging and distribution controls
 - Retrains the anomaly model using analyst sightings as a feedback signal
 
-> **Read the full project write-up on Medium:** [Designing and Implementing THREATRADAR: An Open-Source Feed-Based Threat Intelligence Pipeline]([https://medium.com/@your-article-link](https://medium.com/@salmactf/designing-and-implementing-threatradar-an-open-source-feed-based-threat-intelligence-pipeline-73d568da8f27))
+> **Read the full project write-up on Medium:** [Designing and Implementing THREATRADAR: An Open-Source Feed-Based Threat Intelligence Pipeline](https://medium.com/@salmactf/designing-and-implementing-threatradar-an-open-source-feed-based-threat-intelligence-pipeline-73d568da8f27)
 
 ---
 
