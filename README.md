@@ -54,70 +54,15 @@ A core design goal is addressing **feed poisoning**: the injection of false or m
 - Pushes validated, enriched IOCs to MISP with TLP tagging and distribution controls
 - Retrains the anomaly model using analyst sightings as a feedback signal
 
-> **Read the full project write-up on Medium:** [ThreatRadar — Building an End-to-End Threat Intelligence Pipeline](https://medium.com/@your-article-link)
+> **Read the full project write-up on Medium:** [Designing and Implementing THREATRADAR: An Open-Source Feed-Based Threat Intelligence Pipeline]([https://medium.com/@your-article-link](https://medium.com/@salmactf/designing-and-implementing-threatradar-an-open-source-feed-based-threat-intelligence-pipeline-73d568da8f27))
 
 ---
 
 ## Pipeline Architecture
 
-ThreatRadar runs as a set of Docker microservices organized into six sequential stages:
+ThreatRadar runs as a set of Docker microservices organized into nine sequential stages:
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        THREATRADAR PIPELINE                             │
-│                                                                         │
-│  ┌─────────────┐    ┌──────────────┐    ┌────────────────────────────┐  │
-│  │ THREAT FEEDS│───▶│  INGESTION   │───▶│     NORMALIZATION         │  │
-│  │             │    │              │    │                            │  │
-│  │ • NVD CVEs  │    │ Filebeat     │    │ ti_processor.py            │  │
-│  │ • OTX       │    │ new_feeds.py │    │ Deduplication              │  │
-│  │ • AbuseIPDB │    │ news_ioc_    │    │ Type classification        │  │
-│  │ • EmgThreats│    │ feeder.py    │    │ Source confidence scoring  │  │
-│  │ • SSL BL    │    │              │    │                            │  │
-│  │ • News RSS  │    └──────────────┘    │ Indices: ti_ip, ti_url,    │  │
-│  └─────────────┘                        │ ti_domain, ti_hash,        │  │
-│                                         │ ti_cve, ti_ransomware,     │  │ 
-│                                         │ ti_wallet                  │  │
-│                                         └────────────────────────────┘  │
-│                                                      │                  │
-│                                                      ▼                  │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                      ENRICHMENT                                   │  │
-│  │  enricher.py: MITRE ATT&CK mapping, geo-IP, CVSS, actor lookup   │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                      │                  │
-│                                                      ▼                  │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                      CORTEX SCORING                               │  │
-│  │  cortex_scorer.py                                                 │  │
-│  │  VirusTotal · AbuseIPDB · Maltiverse · IPinfo · Urlscan           │  │
-│  │  HybridAnalysis                                                   │  │
-│  │  → cortex_score · cortex_severity · cortex_action                 │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                      │                  │
-│                                                      ▼                  │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                          AI DETECTION                                 │  │
-│  │  anomaly_detector.py: IsolationForest model                      │  │
-│  │  → anomaly_score · ml_tier · poison_flag
-      llm_analyzer.py: LLM semantic contradition analyzer                        │  │
-│  │  → semantic_verdict · semantic_red_flags · llm_poison_score                       │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                      │                  │
-│                                                      ▼                  │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │                 MISP EXPORT AND FEEDBACK                          │  │
-│  │  misp_pusher.py: bulk-push validated IOCs to MISP                │  │
-│  │  feedback_daemon.py : MISP sightings → model retraining           │  │
-│  │  retrain_with_feedback.py: incremental model update              │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-│                                                      │                  │
-│                                                      ▼                  │
-│  ┌───────────────────────────────────────────────────────────────────┐  │
-│  │          VISUALIZATION: Kibana Dashboards and Data Retention     │  │
-│  └───────────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+![ThreatRadar Pipeline](ThreatRadarPipeline.png)
 
 ---
 
