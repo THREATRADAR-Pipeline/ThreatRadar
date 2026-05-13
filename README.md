@@ -1,4 +1,4 @@
-# ThreatRadar
+![ThreatRadar](THREATRADAR.png)
 
 An end-to-end Threat Intelligence pipeline with AI-powered feed poisoning detection, Cortex-driven IOC scoring, and MISP integration.
 
